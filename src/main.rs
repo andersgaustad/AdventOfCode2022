@@ -2,6 +2,7 @@ use std::env;
 
 mod dec01;
 mod dec02;
+mod dec03;
 
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
@@ -17,6 +18,7 @@ fn main() -> Result<(), ()> {
     match arg {
         "1" => dec01::main(),
         "2" => dec02::main(),
+        "3" => dec03::main(),
         _ => {
             println!("Unrecognized arg {}", arg);
             return Err(());
