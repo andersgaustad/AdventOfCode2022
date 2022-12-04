@@ -3,6 +3,7 @@ use std::env;
 mod dec01;
 mod dec02;
 mod dec03;
+mod dec04;
 
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
@@ -19,6 +20,7 @@ fn main() -> Result<(), ()> {
         "1" => dec01::main(),
         "2" => dec02::main(),
         "3" => dec03::main(),
+        "4" => dec04::main(),
         _ => {
             println!("Unrecognized arg {}", arg);
             return Err(());
