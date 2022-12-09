@@ -7,6 +7,7 @@ mod dec04;
 // 5 missing in action
 mod dec06;
 mod dec07;
+mod dec08;
 
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
@@ -27,6 +28,7 @@ fn main() -> Result<(), ()> {
         // 5 was tragically lost after driver crash
         "6" => dec06::main(),
         "7" => dec07::main(),
+        "8" => dec08::main(),
         _ => {
             println!("Unrecognized arg {}", arg);
             return Err(());
