@@ -8,6 +8,7 @@ mod dec04;
 mod dec06;
 mod dec07;
 mod dec08;
+mod dec09;
 
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
@@ -29,6 +30,7 @@ fn main() -> Result<(), ()> {
         "6" => dec06::main(),
         "7" => dec07::main(),
         "8" => dec08::main(),
+        "9" => dec09::main(),
         _ => {
             println!("Unrecognized arg {}", arg);
             return Err(());
