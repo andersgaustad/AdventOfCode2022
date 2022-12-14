@@ -1,11 +1,10 @@
 use std::{collections::HashMap, fs::File, io::{BufReader, BufRead}};
 
-use image::ImageBuffer;
-
 pub fn main() {
     const WIDTH : u32 = 40;
     const HEIGHT : u32 = 6;
 
+    const EARLY_EXIT : bool = false;
     const EARLY_EXIT_AFTER : i32 = 220;
     let mut add_execution_queue = HashMap::new();
 
@@ -22,13 +21,9 @@ pub fn main() {
         let x_pos = i % WIDTH;
         let y_pos = i / WIDTH;
 
-        if y_pos > HEIGHT {
+        if y_pos >= HEIGHT {
             break;
         }
-
-        let sprite_delta = x.abs_diff(x_pos.try_into().unwrap());
-        let color : u8 = if sprite_delta <= 1 {255} else {0};
-        *image_buffer.get_pixel_mut(x_pos, y_pos) = image::Luma([color]);
 
         let line = lines.next();
         if let Some(line) = line  {
@@ -54,14 +49,22 @@ pub fn main() {
         let pop = add_execution_queue.remove(&cycle);
         if let Some(pending_add) = pop {
             x += pending_add;
-            println!("Add finished (C={}): x+={} -> {}", cycle, pending_add, x);
+            //println!("Add finished (C={}): x+={} -> {}", cycle, pending_add, x);
         }
+
+        // Sprite
+        let sprite_delta = x.abs_diff(x_pos.try_into().unwrap());
+        let color : u8 = if sprite_delta <= 1 {255} else {0};
+        *image_buffer.get_pixel_mut(x_pos, y_pos) = image::Luma([color]);
+
+        //let debug_pixel = if color == 0 {'.'} else {'#'};
+        //println!("Cycle {} : Sprite: {} : Drawing pixel {} at {}-{}", cycle, x, debug_pixel, x_pos, y_pos);
 
         if cycle >= 20 && (cycle - 20) % 40 == 0 {
             let signal_strength : i32 = cycle as i32 * x;
             println!("Signal at {}: {} (c={} * x={})", cycle, signal_strength, cycle, x);
             sum += signal_strength;
-            if cycle >= EARLY_EXIT_AFTER.try_into().unwrap() {
+            if EARLY_EXIT && cycle >= EARLY_EXIT_AFTER.try_into().unwrap() {
                 break;
             }
 
