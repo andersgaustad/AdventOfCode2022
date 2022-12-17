@@ -99,16 +99,7 @@ fn fscore(coordinate : &Coordinate, goal: &Coordinate, g_scores: &HashMap<Coordi
     }
 }
 
-
-pub fn main() {
-    let map = load_map();
-
-    let start_index = map.map.iter().position(|x| x == &-1).unwrap();
-    let end_index = map.map.iter().position(|x| x == &-2).unwrap();
-
-    let start = map.get_coordinate(start_index);
-    let end = map.get_coordinate(end_index);
-
+fn shortest_path_from(map : &Map, start : &Coordinate, end : &Coordinate) -> Option<u32> {
     let mut g_scores = HashMap::new();
     g_scores.insert(start.clone(), 0);
 
@@ -118,18 +109,17 @@ pub fn main() {
 
     while !queue.is_empty() {
         queue.sort_by(|a, b| {
-            let a_score = fscore(a, &end, &g_scores);
-            let b_score = fscore(b, &end, &g_scores);
+            let a_score = fscore(a, end, &g_scores);
+            let b_score = fscore(b, end, &g_scores);
 
             b_score.cmp(&a_score)
         });
 
         let current = queue.pop().unwrap();
         //println!("Current: {},{} ", current.x, current.y);
-        if current == end {
+        if &current == end {
             let steps = step_through_backtrace(&start, &current, &backtrace);
-            println!("Found path! Steps: {}", steps);
-            return;
+            return Some(steps);
         }
 
         let north = Coordinate { x: current.x, y: current.y + 1 };
@@ -167,5 +157,35 @@ pub fn main() {
         visited.insert(current);        
     }
 
-    println!("Found no path after visiting {} nodes", visited.len());
+    return None;
+
+}
+
+
+pub fn main() {
+    let map = load_map();
+
+    let start_index = map.map.iter().position(|x| x == &-1).unwrap();
+    let end_index = map.map.iter().position(|x| x == &-2).unwrap();
+
+    let start = map.get_coordinate(start_index);
+    let end = map.get_coordinate(end_index);
+
+    // Part 1
+    let steps = shortest_path_from(&map, &start, &end).unwrap();
+    println!("Part a: Shortest path from S: {} steps", steps);
+
+    // Part 2
+    let mut iter = map.map.iter();
+    let mut start_index_collection = vec![start_index];
+    while let Some(pos) = iter.position(|x| x == &0) {
+        start_index_collection.push(pos);
+    }
+
+    let start_coordinates = start_index_collection.iter().map(|x| map.get_coordinate(*x));
+    let lowest_path = start_coordinates.map(|dynamic_start| {
+        shortest_path_from(&map, &dynamic_start, &end).unwrap_or(u32::MAX)
+    }).min().unwrap();
+
+    println!("Part b: Shortest path from any start: {} steps", lowest_path);
 }
