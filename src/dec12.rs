@@ -21,7 +21,13 @@ impl Map {
         let index = self.get_index(coordinate);
 
         let value = self.map.get(index).unwrap();
-        return value;
+        return if value == &-1 {
+            &0
+        } else if value == &-2 {
+            &(('z' as i32) - ('a' as i32))
+        } else {
+            value
+        }
     }
 
     fn in_range(&self, coordinate : &Coordinate) -> bool {
@@ -32,13 +38,13 @@ impl Map {
     }
 
     fn get_index(&self, coordinate : &Coordinate) -> usize {
-        let value = coordinate.x + coordinate.y * (self.rows as i32);
+        let value = coordinate.x + coordinate.y * (self.cols as i32);
         return value as usize;
     }
 
     fn get_coordinate(&self, index : usize) -> Coordinate {
         let x = (index % self.cols) as i32;
-        let y = (index / self.rows) as i32;
+        let y = (index / self.cols) as i32;
 
         Coordinate { x, y }
     }
@@ -46,7 +52,7 @@ impl Map {
 
 fn load_map() -> Map {
     let raw = std::fs::read_to_string("res/dec12_input.txt").expect(WRONG_FORMAT_MESSSAGE);
-    let collected = raw.split("\n").collect::<Vec<&str>>();
+    let collected = raw.split("\n").filter(|s| !s.is_empty()).collect::<Vec<&str>>();
     let rows = collected.len();
     let cols = collected.get(0).unwrap().len();
     let data = collected.iter().map(|s| s.chars()).flatten().map(|c| {
@@ -62,6 +68,7 @@ fn load_map() -> Map {
         rows,
         cols,
     };
+    //println!("Loaded map: {}x{}", rows, cols);
     return map;
 }
 
@@ -76,6 +83,22 @@ fn step_through_backtrace(start : &Coordinate, end : &Coordinate, backtrace : &H
     return steps;
 }
 
+fn herurestic(current: &Coordinate, goal: &Coordinate) -> i32 {
+    let delta_x = (goal.x - current.y).abs();
+    let delta_y = (goal.y - current.y).abs();
+
+    return delta_x + delta_y;
+}
+
+fn fscore(coordinate : &Coordinate, goal: &Coordinate, g_scores: &HashMap<Coordinate, i32>) -> i32 {
+    let g_score = g_scores.get(coordinate);
+    if let Some(score) = g_score {
+        return score + herurestic(coordinate, goal);
+    } else {
+        return i32::MAX;
+    }
+}
+
 
 pub fn main() {
     let map = load_map();
@@ -86,15 +109,26 @@ pub fn main() {
     let start = map.get_coordinate(start_index);
     let end = map.get_coordinate(end_index);
 
+    let mut g_scores = HashMap::new();
+    g_scores.insert(start.clone(), 0);
+
     let mut backtrace = HashMap::new();
     let mut visited = HashSet::new();
     let mut queue = vec![start.clone()];
 
     while !queue.is_empty() {
+        queue.sort_by(|a, b| {
+            let a_score = fscore(a, &end, &g_scores);
+            let b_score = fscore(b, &end, &g_scores);
+
+            b_score.cmp(&a_score)
+        });
+
         let current = queue.pop().unwrap();
+        //println!("Current: {},{} ", current.x, current.y);
         if current == end {
             let steps = step_through_backtrace(&start, &current, &backtrace);
-            println!("Steps: {}", steps);
+            println!("Found path! Steps: {}", steps);
             return;
         }
 
@@ -104,16 +138,27 @@ pub fn main() {
         let west = Coordinate { x: current.x - 1, y: current.y };
 
         let dirs = vec![north, east, south, west];
+        let mut tentative_g = *g_scores.get(&current).unwrap_or(&i32::MAX);
+        if tentative_g != i32::MAX {
+            tentative_g += 1;
+        }
         for dir in dirs {
-            let valid = map.in_range(&dir) && !visited.contains(&dir);
+            let valid = map.in_range(&dir);
             if valid {
                 let my_height = map.get_value(&current);
                 let height = map.get_value(&dir);
 
-                if height <= &0 || my_height >= &(height - &1) {
-                    backtrace.insert(dir.clone(), current.clone());
-                    queue.push(dir);
+                let delta_height = height - my_height;
 
+                //println!("Height here: ({},{}): {} - Height at neighbor: ({},{}): {}", current.x, current.y, my_height, dir.x, dir.y, height);
+
+                let neighbor_g = *g_scores.get(&dir).unwrap_or(&i32::MAX);
+                if delta_height <= 1 && tentative_g < neighbor_g {
+                    backtrace.insert(dir.clone(), current.clone());
+                    g_scores.insert(dir.clone(), tentative_g);
+                    if !queue.contains(&dir) {
+                        queue.push(dir);
+                    }
                 }
             }
 
@@ -122,5 +167,5 @@ pub fn main() {
         visited.insert(current);        
     }
 
-    println!("Found no path?");
+    println!("Found no path after visiting {} nodes", visited.len());
 }
