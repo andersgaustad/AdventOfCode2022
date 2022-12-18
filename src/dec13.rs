@@ -208,12 +208,27 @@ fn load_pairs() -> Vec<(DistressNode, DistressNode)> {
     return split_into_pairs;
 }
 
+fn is_div_package(root : &DistressNode, div_value : i32) -> bool {
+    let level_1 = root.content.get(0);
+    if let Some(ok) = level_1 {
+        if let DistressMember::Node(ok_node) = ok {
+            let level_2 = ok_node.content.get(0);
+            if let Some(ok) = level_2 {
+                if let DistressMember::Value(value) = ok {
+                    return *value == div_value;
+                }
+            }
+        }
+    }
+
+    return false;
+}
 
 
 pub fn main() {
     // Part a
+    let timer_a = Instant::now();
     let pairs = load_pairs();
-    let timer = Instant::now();
     println!("Loaded {} pairs", pairs.len());
 
     let mut sum = 0;
@@ -232,5 +247,45 @@ pub fn main() {
         }
     }
 
-    println!("Sum is {} (Took {} ms)", sum, timer.elapsed().as_millis());
+    println!("Part A: Sum is {} (Took {} ms)", sum, timer_a.elapsed().as_millis());
+
+    // Part B
+    let timer_b = Instant::now();
+    let mut new_pair_instance = load_pairs();
+    let mut all_unpaired = vec![];
+    all_unpaired.reserve_exact(2 * new_pair_instance.len() + 2);
+    while !new_pair_instance.is_empty() {
+        let popped = new_pair_instance.pop().unwrap();
+        let left = popped.0;
+        let right = popped.1;
+        all_unpaired.push(left);
+        all_unpaired.push(right);
+    }
+
+    let div_pack_2 = DistressNode::from_str("[[2]]").unwrap();
+    let div_pack_6 = DistressNode::from_str("[[6]]").unwrap();
+
+    all_unpaired.push(div_pack_2);
+    all_unpaired.push(div_pack_6);
+
+    
+    all_unpaired.sort_by(|a, b| {
+        a.compared_to(&b)
+    });
+    if VERBOSE {
+        for x in all_unpaired.iter() {
+            println!("v {}", x);
+        }
+    }
+
+    let index_of_div_2 = all_unpaired.iter().position(|x| {
+        is_div_package(x, 2)
+    }).unwrap() + 1;
+
+    let index_of_div_6 = all_unpaired.iter().position(|x| {
+        is_div_package(x, 6)
+    }).unwrap() + 1;
+
+    let prod = index_of_div_2 * index_of_div_6;
+    println!("Part B: Decoder key is {} (Took {} ms)", prod, timer_b.elapsed().as_millis());
 }
