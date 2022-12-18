@@ -2,6 +2,9 @@ use std::{time::Instant, io::BufRead, collections::HashSet};
 
 const WRONG_FORMAT_MESSSAGE : &str = "File is in wrong format!";
 
+// Options
+const FLOOR : bool = true;
+
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 struct Cooordinate {
     x : i32,
@@ -85,9 +88,17 @@ fn blocked(coordinate : &Cooordinate, sand : &HashSet<Cooordinate>, lines : &Vec
 
 pub fn main() {
     // Part a
-    let timer_a = Instant::now();
-    let lines = load_lines();
+    let timer = Instant::now();
+    let mut lines = load_lines();
     let void_border = lines.iter().map(|l| l.lowest()).max().unwrap();
+    if FLOOR {
+        let floor_border = void_border + 2;
+        let left = Cooordinate { x: i32::MIN, y: floor_border };
+        let right = Cooordinate { x: i32::MAX, y: floor_border };
+        let floor = Line { a: left, b: right };
+        lines.push(floor);
+    }
+
     //println!("Void border set to {}", void_border);
 
     let spawn_point = Cooordinate {x: 500, y: 0};
@@ -109,7 +120,7 @@ pub fn main() {
 
                     // Check event horizon
                     let current_y = sand.y;
-                    if current_y > void_border {
+                    if !FLOOR && current_y > void_border {
                         break 'outer;
                     } else {
                         continue 'inner;
@@ -118,13 +129,16 @@ pub fn main() {
             }
 
             // Blocked in all directions
-            assert!(!placed_sand_blocks.contains(&sand));
             placed_sand_blocks.insert(sand);
-            assert!(!placed_sand_blocks.contains(&spawn_point));
-            //println!("Placed sand at {}", &sand);
-            continue 'outer;
+
+            if sand == spawn_point {
+                break 'outer;
+            } else {
+                continue 'outer;
+            }
+            
         }
     }
 
-    println!("Part A: Sand simulation complete: Placed {} sand units (Took {} ms)", placed_sand_blocks.len(), timer_a.elapsed().as_millis());
+    println!("Sand simulation complete: Placed {} sand units (Took {} ms)", placed_sand_blocks.len(), timer.elapsed().as_millis());
 }
