@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, time::Instant};
 
 const WRONG_FORMAT_MESSSAGE : &str = "File is in wrong format!";
 
@@ -172,20 +172,33 @@ pub fn main() {
     let end = map.get_coordinate(end_index);
 
     // Part 1
+    let timer_a = Instant::now();
     let steps = shortest_path_from(&map, &start, &end).unwrap();
-    println!("Part a: Shortest path from S: {} steps", steps);
+    println!("Part a: Shortest path from S: {} steps (Took {} ms)", steps, timer_a.elapsed().as_millis());
 
     // Part 2
-    let mut iter = map.map.iter();
+    let timer_b = Instant::now();
     let mut start_index_collection = vec![start_index];
-    while let Some(pos) = iter.position(|x| x == &0) {
-        start_index_collection.push(pos);
+    for i in 0..map.map.len() {
+        let value = *map.map.get(i).unwrap();
+        if value == 0 {
+            start_index_collection.push(i);
+
+            let coordinate_check = map.get_coordinate(i);
+            let value_check = *map.get_value(&coordinate_check);
+            assert!(value_check == 0);
+        }
     }
+    
+    //println!("Map: {:?}", &map.map);
+    //println!("Index vector: {:?}", start_index_collection);
 
     let start_coordinates = start_index_collection.iter().map(|x| map.get_coordinate(*x));
-    let lowest_path = start_coordinates.map(|dynamic_start| {
-        shortest_path_from(&map, &dynamic_start, &end).unwrap_or(u32::MAX)
+    let shortest_path = start_coordinates.map(|dynamic_start| {
+        let shortest = shortest_path_from(&map, &dynamic_start, &end).unwrap_or(u32::MAX);
+        //println!("Starting at {},{} -> {} steps", dynamic_start.x, dynamic_start.y, shortest);
+        shortest
     }).min().unwrap();
 
-    println!("Part b: Shortest path from any start: {} steps", lowest_path);
+    println!("Part b: Shortest path from any start: {} steps (Took {} ms)", shortest_path, timer_b.elapsed().as_millis());
 }
