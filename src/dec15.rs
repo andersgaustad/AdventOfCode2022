@@ -92,6 +92,41 @@ impl Sensor {
 
         return set;
     }
+
+    fn get_coordinates_in_line(&self, x: Option<i32>, y: Option<i32>) -> Result<HashSet<Cooordinate>, std::fmt::Error> {
+        let mut coordinates = HashSet::new();
+        let only_one_set = x.is_some() ^ y.is_some();
+        if !only_one_set {
+            return Err(std::fmt::Error);
+        }
+
+        let exclusion_range : i32 = self.get_exclusion_range().try_into().expect("Too large range");
+        let move_x = x.is_some();
+        let target = if move_x { x.unwrap() } else { y.unwrap() };
+        let current_x = self.location.x;
+        let current_y = self.location.y;
+        let current = if move_x { current_x } else { current_y };
+        let delta : i32 = target.abs_diff(current).try_into().unwrap();
+
+        let line_overflow = exclusion_range - delta;
+        if line_overflow < 0 {
+            return Ok(coordinates);
+        }
+               
+        let first_point_touched = if move_x { Cooordinate { x: target, y: current_y}} else { Cooordinate { x: current_x, y: target }};
+        for i in 0..line_overflow+1 {
+            let x_on_line = if move_x { 0 } else { i };
+            let y_on_line = if move_x { i } else { 0 };
+
+            let positive = Cooordinate { x: first_point_touched.x + x_on_line, y: first_point_touched.y + y_on_line };
+            let negative = Cooordinate { x: first_point_touched.x - x_on_line, y: first_point_touched.y - y_on_line };
+
+            coordinates.insert(positive);
+            coordinates.insert(negative);
+        }
+
+        return Ok(coordinates);
+    }
 }
 
 struct LoadedData {
@@ -141,7 +176,7 @@ pub fn main() {
     let mut already_occupied = HashSet::new();
 
     for sensor in sensors {
-        let covered = sensor.get_covered_area();
+        let covered = sensor.get_coordinates_in_line(None, Some(EVENT_ROW)).unwrap();
         let filtered = covered.iter().filter(|c| c.y == EVENT_ROW);
         event_coordinates.extend(filtered);
 
